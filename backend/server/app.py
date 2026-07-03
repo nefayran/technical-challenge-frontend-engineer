@@ -87,4 +87,12 @@ def list_levels() -> list[str]:
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("backend.server.app:app", host="127.0.0.1", port=8000, reload=True)
+    # levels.json is written on every save; keep it out of the reload watcher
+    # or each save would restart the server.
+    uvicorn.run(
+        "backend.server.app:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+        reload_excludes=["*.json"],
+    )
