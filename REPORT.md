@@ -1,0 +1,31 @@
+# Level editor — report
+
+Run: `bun install && uv sync`, then `uv run backend` and `bun run editor` → http://localhost:3001. Tests: `bun test`.
+
+## Technical decisions
+
+**Cell model.** One byte per cell in a `Uint8Array` (12 codes: empty, wall, pellet, power, 4 player dirs, 4 ghost dirs). The engine's `BlockValue` objects would mean a million heap allocations at 1000×1000; a flat byte array makes every tool O(touched cells) and the whole board 1MB. The editor ships its own lossless ascii2d codec because the engine's `toAscii2d` serializes walls only — using it would silently strip pellets and spawns on the first save. The codec is unit-tested cell-by-cell against the engine's parser on the CLASSIC board.
+
+**Rendering.** One canvas, camera = {x, y, px-per-cell}, redraw only the visible cell rect. Above 4px/cell cells are drawn as glyphs; below that the renderer blits a 1px-per-cell offscreen bitmap (updated incrementally per edit), so the far-zoom view of a 1M-cell board is a single scaled `drawImage`. Vue owns only the chrome; the grid lives outside reactivity and the canvas repaints on an explicit tick. Measured on a generated 1000×1000: 8.4ms average frame during a paint drag.
+
+**Undo.** Sparse diffs `{indices, before, after}` per stroke, with a byte budget. Memory tracks edit size, not board size.
+
+**Sync.** Debounced autosave (800ms idle) of the whole board with `base_version`, since the API is whole-level store with optimistic locking — I deliberately did not invent a delta protocol the backend doesn't speak. Trade-off of autosave: server versions become a conflict detector rather than a meaningful save history; I chose not-losing-work over version semantics. On 409 the client re-reads the level: if the server content is byte-equal to what was sent, this is the lost-response case — the new version is adopted silently (this is what makes retries not double-apply). Otherwise a dialog offers "take theirs" (applied as one undoable patch, not a state wipe) or "keep mine" (rebase onto the server version and resend). Network failure → offline badge, exponential retry, editing continues.
+
+**Crash safety.** "Backend is authority" conflicts with "no silent loss" for edits made in the debounce window. Flushing on unload does not work at this scale — `sendBeacon`/`fetch keepalive` cap at 64KB and a 1000×1000 board is ~4MB — so the editor throttle-writes a local draft (raw cells, base64, ~1.4MB for 1M cells) while unsaved. On reload the backend state always loads; if a differing draft exists it is *offered* in a banner, never auto-applied.
+
+**Backend (modified).** Implemented the `storage.py` TODO: write-through JSON under the existing lock with atomic rename; version contract untouched. Two gotchas found on the way: `seed()` unconditionally overwrote `classic` (would drop persisted edits on restart — now seed-if-absent), and uvicorn's reload watcher would restart the server on every save until `levels.json` was excluded.
+
+**Playtest.** The engine is pure TS, so "▶ Play" runs the real engine on the serialized grid in an overlay — the designer verifies the level without leaving the editor. The game's naive full-board draw would not survive 1000×1000, so the playtest uses a follow camera with the same culling, and pellet lookup rides the engine's (x, y)-sorted pellet array via binary search.
+
+**Chrome.** Design tokens are one TS object injected as CSS custom properties (dark/light themes; the canvas reads the same tokens, so a theme switch rebuilds the overview bitmap). UI strings en/ru/ja via a ~30-line `t()` — vue-i18n felt like a framework the brief said not to add. Keyboard: 1–6 tools, Cmd/Ctrl+Z/Shift+Z, F fit, Space pan; the canvas is focusable with an arrow-key cell cursor, Enter to stamp, and an aria-live position readout.
+
+## What I read, and what I chose not to change
+
+Read all of `frontend/game/engine/` (board/ascii2d/coord/player/ghost/engine), the Vue playground, and both backend packages before writing code. Not changed: the engine (including the lossy `toAscii2d` — the editor works around it rather than "fixing" shipped behavior other code may rely on; noted here instead), the game playground, the generator, the API surface and its version contract. Changed: `storage.py`/`app.py` as described, plus `package.json` scripts.
+
+## AI usage
+
+Claude Code (Fable 5) wrote most of the code; architecture and product calls were mine and made before generation: the byte-grid + own codec, the overview-bitmap zoom strategy, autosave-over-versions, the 409 lost-response reconciliation, draft-offered-never-applied, and implementing the backend TODO. I also drove verification: unit tests plus a scripted Playwright pass (paint → autosave → version bump, 1000×1000 frame timing, a forced 409 with a foreign write, and an offline-crash-restore run that killed and revived the backend mid-session). Things the AI got wrong or tried that I rejected: it initially reset undo history on "take theirs" while the dialog promised undoability (fixed to a single undoable patch); its first kill-the-backend test accidentally killed the browser's network process via `lsof` and produced a misleading failure — worth mentioning because distrusting a green-looking test run was the actual work.
+
+Open question I did not get to: collaborative editing on top of this API — per-cell diffs against the 409 snapshot would allow three-way merge of non-overlapping edits instead of the binary theirs/mine choice, without any backend change.
