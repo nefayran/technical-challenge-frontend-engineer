@@ -19,6 +19,7 @@ export class SyncController {
   private baseVersion: number;
   private state: SyncState = "synced";
   private readonly serialize: () => string;
+  private readonly nameOf: () => string;
   private readonly events: SyncEvents;
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -32,11 +33,13 @@ export class SyncController {
     levelId: string,
     baseVersion: number,
     serialize: () => string,
+    nameOf: () => string,
     events: SyncEvents,
   ) {
     this.levelId = levelId;
     this.baseVersion = baseVersion;
     this.serialize = serialize;
+    this.nameOf = nameOf;
     this.events = events;
   }
 
@@ -108,6 +111,7 @@ export class SyncController {
         ascii2d: sent.ascii2d,
         id: this.levelId,
         base_version: sent.baseVersion,
+        name: this.nameOf(),
       });
       this.onSaveSuccess(response.version);
     } catch (error) {

@@ -1,5 +1,5 @@
 import { CONFIG } from "../config.ts";
-import type { GenerateResponse, LevelResponse, StoreRequest } from "../types.ts";
+import type { GenerateResponse, LevelResponse, LevelSummary, StoreRequest } from "../types.ts";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -52,6 +52,6 @@ export function generateLevel(seed: number, size: number): Promise<GenerateRespo
   });
 }
 
-export function listLevels(): Promise<string[]> {
-  return request<string[]>("/levels");
+export function listLevels(): Promise<LevelSummary[]> {
+  return request<LevelSummary[]>("/levels");
 }

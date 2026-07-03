@@ -70,6 +70,7 @@ const en: Dict = {
   "sidebar.generate": "+ Generate…",
   "sidebar.duplicate": "Duplicate",
   "sidebar.duplicate.hint": "Save a copy as a new level",
+  "sidebar.rename.hint": "double-click to rename",
 
   "newLevel.title": "New blank level",
   "newLevel.width": "Width",
@@ -156,6 +157,7 @@ const ru: Dict = {
   "sidebar.generate": "+ Сгенерировать…",
   "sidebar.duplicate": "Дублировать",
   "sidebar.duplicate.hint": "Сохранить копию как новый уровень",
+  "sidebar.rename.hint": "двойной клик — переименовать",
 
   "newLevel.title": "Новый пустой уровень",
   "newLevel.width": "Ширина",
@@ -242,6 +244,7 @@ const ja: Dict = {
   "sidebar.generate": "+ 自動生成…",
   "sidebar.duplicate": "複製",
   "sidebar.duplicate.hint": "コピーを新しいレベルとして保存",
+  "sidebar.rename.hint": "ダブルクリックで名前を変更",
 
   "newLevel.title": "新しい空のレベル",
   "newLevel.width": "幅",

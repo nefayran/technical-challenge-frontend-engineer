@@ -3,7 +3,14 @@ import { nextTick, ref, watch } from "vue";
 
 import { CONFIG } from "../config.ts";
 import { t } from "../i18n.ts";
-import { chrome, duplicateLevel, newBlankLevel, openLevel, refreshLevelList } from "../store.ts";
+import {
+  chrome,
+  duplicateLevel,
+  newBlankLevel,
+  openLevel,
+  refreshLevelList,
+  renameLevel,
+} from "../store.ts";
 
 const emit = defineEmits<{ generate: [] }>();
 
@@ -28,8 +35,32 @@ async function createBlank(): Promise<void> {
   await newBlankLevel(clampSize(newWidth.value), clampSize(newHeight.value));
 }
 
-function shortId(id: string): string {
-  return id.length > 12 ? `${id.slice(0, 10)}…` : id;
+function displayName(level: { id: string; name: string }): string {
+  const label = level.name || level.id;
+  return label.length > 18 ? `${label.slice(0, 16)}…` : label;
+}
+
+const renamingId = ref<string | null>(null);
+const renameValue = ref("");
+const renameInput = ref<HTMLInputElement[] | HTMLInputElement | null>(null);
+
+async function startRename(level: { id: string; name: string }): Promise<void> {
+  if (level.id !== chrome.levelId) {
+    await openLevel(level.id);
+  }
+  renamingId.value = level.id;
+  renameValue.value = level.name || level.id;
+  await nextTick();
+  const el = Array.isArray(renameInput.value) ? renameInput.value[0] : renameInput.value;
+  el?.focus();
+  el?.select();
+}
+
+function commitRename(): void {
+  if (renamingId.value !== null) {
+    renameLevel(renameValue.value);
+  }
+  renamingId.value = null;
 }
 </script>
 
@@ -43,15 +74,26 @@ function shortId(id: string): string {
     </div>
     <nav :aria-label="t('sidebar.levels')">
       <ul class="list">
-        <li v-for="id in chrome.levels" :key="id">
+        <li v-for="level in chrome.levels" :key="level.id">
+          <input
+            v-if="renamingId === level.id"
+            ref="renameInput"
+            v-model="renameValue"
+            class="rename-input"
+            @keydown.enter="commitRename()"
+            @keydown.esc="renamingId = null"
+            @blur="commitRename()"
+          />
           <button
+            v-else
             class="level-btn"
-            :class="{ active: id === chrome.levelId }"
-            :aria-current="id === chrome.levelId ? 'true' : undefined"
-            :title="id"
-            @click="openLevel(id)"
+            :class="{ active: level.id === chrome.levelId }"
+            :aria-current="level.id === chrome.levelId ? 'true' : undefined"
+            :title="`${level.name || level.id} — ${t('sidebar.rename.hint')}`"
+            @click="openLevel(level.id)"
+            @dblclick="startRename(level)"
           >
-            {{ shortId(id) }}
+            {{ displayName(level) }}
           </button>
         </li>
       </ul>
@@ -141,6 +183,12 @@ nav {
   text-align: left;
   background: transparent;
   border-color: transparent;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+}
+
+.rename-input {
+  width: 100%;
   font-family: var(--font-mono);
   font-size: var(--font-size-md);
 }

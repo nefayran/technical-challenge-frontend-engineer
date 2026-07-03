@@ -19,6 +19,7 @@ from .models import (
     GenerateRequest,
     GenerateResponse,
     LevelResponse,
+    LevelSummary,
     StoreRequest,
 )
 from .storage import LevelNotFound, LevelStore, StoredLevel, VersionConflict
@@ -41,7 +42,9 @@ store.seed(CLASSIC_LEVEL_ID, CLASSIC)
 
 
 def _as_response(level: StoredLevel) -> LevelResponse:
-    return LevelResponse(id=level.id, version=level.version, ascii2d=level.ascii2d)
+    return LevelResponse(
+        id=level.id, version=level.version, ascii2d=level.ascii2d, name=level.name
+    )
 
 
 @app.get("/level/load")
@@ -55,7 +58,7 @@ def load_level(id: str = Query(...)) -> LevelResponse:
 @app.post("/level/store")
 def store_level(request: StoreRequest) -> LevelResponse:
     if request.id is None:
-        return _as_response(store.create(request.ascii2d))
+        return _as_response(store.create(request.ascii2d, request.name or ""))
 
     if request.base_version is None:
         raise HTTPException(
@@ -63,7 +66,9 @@ def store_level(request: StoreRequest) -> LevelResponse:
             detail="base_version is required when updating an existing level",
         )
     try:
-        updated = store.update(request.id, request.ascii2d, request.base_version)
+        updated = store.update(
+            request.id, request.ascii2d, request.base_version, request.name
+        )
     except LevelNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except VersionConflict as exc:
@@ -80,8 +85,10 @@ def generate_level(request: GenerateRequest) -> GenerateResponse:
 
 
 @app.get("/levels")
-def list_levels() -> list[str]:
-    return store.ids()
+def list_levels() -> list[LevelSummary]:
+    return [
+        LevelSummary(id=level.id, name=level.name) for level in store.all()
+    ]
 
 
 def main() -> None:

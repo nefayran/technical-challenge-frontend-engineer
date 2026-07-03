@@ -50,6 +50,13 @@ export type LevelResponse = {
   id: string;
   version: number;
   ascii2d: string;
+  name: string;
+};
+
+// Mirrors LevelSummary in backend/server/models.py.
+export type LevelSummary = {
+  id: string;
+  name: string;
 };
 
 // Mirrors StoreRequest in backend/server/models.py.
@@ -57,6 +64,7 @@ export type StoreRequest = {
   ascii2d: string;
   id?: string;
   base_version?: number;
+  name?: string;
 };
 
 // Mirrors GenerateRequest/GenerateResponse in backend/server/models.py.

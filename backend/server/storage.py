@@ -25,6 +25,7 @@ class StoredLevel:
     id: str
     version: int
     ascii2d: str
+    name: str = ""
 
 
 class LevelNotFound(Exception):
@@ -83,8 +84,10 @@ class LevelStore:
             os.unlink(tmp_path)
             raise
 
-    def create(self, ascii2d: str) -> StoredLevel:
-        level = StoredLevel(id=uuid.uuid4().hex, version=1, ascii2d=ascii2d)
+    def create(self, ascii2d: str, name: str = "") -> StoredLevel:
+        level = StoredLevel(
+            id=uuid.uuid4().hex, version=1, ascii2d=ascii2d, name=name
+        )
         with self._lock:
             self._levels[level.id] = level
             self._persist_locked()
@@ -100,7 +103,9 @@ class LevelStore:
             existing = self._levels.get(level_id)
             if existing is not None:
                 return existing
-            level = StoredLevel(id=level_id, version=1, ascii2d=ascii2d)
+            level = StoredLevel(
+                id=level_id, version=1, ascii2d=ascii2d, name=level_id
+            )
             self._levels[level_id] = level
             self._persist_locked()
         return level
@@ -112,7 +117,13 @@ class LevelStore:
             raise LevelNotFound(level_id)
         return level
 
-    def update(self, level_id: str, ascii2d: str, base_version: int) -> StoredLevel:
+    def update(
+        self,
+        level_id: str,
+        ascii2d: str,
+        base_version: int,
+        name: str | None = None,
+    ) -> StoredLevel:
         with self._lock:
             current = self._levels.get(level_id)
             if current is None:
@@ -120,7 +131,10 @@ class LevelStore:
             if current.version != base_version:
                 raise VersionConflict(level_id, base_version, current.version)
             updated = StoredLevel(
-                id=level_id, version=current.version + 1, ascii2d=ascii2d
+                id=level_id,
+                version=current.version + 1,
+                ascii2d=ascii2d,
+                name=current.name if name is None else name,
             )
             self._levels[level_id] = updated
             self._persist_locked()
@@ -129,3 +143,7 @@ class LevelStore:
     def ids(self) -> list[str]:
         with self._lock:
             return list(self._levels.keys())
+
+    def all(self) -> list[StoredLevel]:
+        with self._lock:
+            return list(self._levels.values())

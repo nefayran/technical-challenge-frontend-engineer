@@ -11,6 +11,7 @@ import {
   type CellPoint,
   type LevelGrid,
   type LevelResponse,
+  type LevelSummary,
   type SyncState,
   type ToolKind,
 } from "./types.ts";
@@ -33,7 +34,8 @@ export const chrome = reactive({
   syncState: "loading" as SyncState,
   version: 0,
   levelId: "",
-  levels: [] as string[],
+  levelName: "",
+  levels: [] as LevelSummary[],
   loading: true,
   loadError: "",
   conflict: null as LevelResponse | null,
@@ -74,14 +76,16 @@ function scheduleDraftWrite(): void {
   }, CONFIG.draft.throttleMs);
 }
 
-function attachSync(levelId: string, version: number): void {
+function attachSync(levelId: string, version: number, name: string): void {
   sync?.dispose();
   chrome.levelId = levelId;
   chrome.version = version;
+  chrome.levelName = name;
   sync = new SyncController(
     levelId,
     version,
     () => serializeAscii2d(gridRef.value!),
+    () => chrome.levelName,
     {
       onStateChange: (state) => {
         chrome.syncState = state;
@@ -129,7 +133,7 @@ export async function openLevel(id: string): Promise<void> {
   try {
     const level = await api.loadLevel(id);
     adoptGrid(parseAscii2d(level.ascii2d));
-    attachSync(level.id, level.version);
+    attachSync(level.id, level.version, level.name);
     const draft = loadDraft(id);
     if (draft !== null && !gridsEqual(draft.grid, gridRef.value!)) {
       chrome.draftOffer = { savedAt: draft.draft.savedAt, grid: draft.grid };
@@ -144,15 +148,15 @@ export async function openLevel(id: string): Promise<void> {
   }
 }
 
-export async function createLevel(grid: LevelGrid): Promise<void> {
+export async function createLevel(grid: LevelGrid, name: string): Promise<void> {
   chrome.loading = true;
   chrome.loadError = "";
   chrome.draftOffer = null;
   chrome.conflict = null;
   try {
-    const level = await api.storeLevel({ ascii2d: serializeAscii2d(grid) });
+    const level = await api.storeLevel({ ascii2d: serializeAscii2d(grid), name });
     adoptGrid(grid);
-    attachSync(level.id, level.version);
+    attachSync(level.id, level.version, level.name);
     await refreshLevelList();
   } catch (error) {
     chrome.loadError = error instanceof Error ? error.message : String(error);
@@ -164,14 +168,14 @@ export async function createLevel(grid: LevelGrid): Promise<void> {
 
 export function newBlankLevel(width: number, height: number): Promise<void> {
   const grid = createGrid(width, height);
-  return createLevel(grid);
+  return createLevel(grid, `blank ${width}×${height}`);
 }
 
 export async function newGeneratedLevel(seed: number, size: number): Promise<void> {
   chrome.loading = true;
   try {
     const generated = await api.generateLevel(seed, size);
-    await createLevel(parseAscii2d(generated.ascii2d));
+    await createLevel(parseAscii2d(generated.ascii2d), `maze s${seed} ${size}×${size}`);
   } catch (error) {
     chrome.loadError = error instanceof Error ? error.message : String(error);
     chrome.loading = false;
@@ -183,7 +187,22 @@ export function duplicateLevel(): Promise<void> {
   if (grid === null) {
     return Promise.resolve();
   }
-  return createLevel(cloneGrid(grid));
+  return createLevel(cloneGrid(grid), `${chrome.levelName || chrome.levelId} copy`);
+}
+
+// A rename is an ordinary dirty edit: the autosave pipeline carries the new
+// name with the next store, so versioning and conflicts need no extra path.
+export function renameLevel(name: string): void {
+  const trimmed = name.trim();
+  if (trimmed === "" || trimmed === chrome.levelName) {
+    return;
+  }
+  chrome.levelName = trimmed;
+  const entry = chrome.levels.find((l) => l.id === chrome.levelId);
+  if (entry !== undefined) {
+    entry.name = trimmed;
+  }
+  sync?.markDirty();
 }
 
 export function beginStroke(cell: CellPoint): void {
@@ -336,7 +355,8 @@ export function discardDraft(): void {
 
 export async function boot(): Promise<void> {
   await refreshLevelList();
-  const first = chrome.levels.includes("classic") ? "classic" : chrome.levels[0];
+  const first =
+    chrome.levels.find((l) => l.id === "classic")?.id ?? chrome.levels[0]?.id;
   if (first !== undefined) {
     await openLevel(first);
   } else {
