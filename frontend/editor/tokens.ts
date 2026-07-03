@@ -167,12 +167,11 @@ const BASE = {
   },
 } as const;
 
+// Dark by default regardless of the OS scheme — the design language is
+// dark-first; light stays available via the header toggle.
 function initialTheme(): Theme {
   const saved = localStorage.getItem(THEME_STORAGE_KEY);
-  if (saved === "dark" || saved === "light") {
-    return saved;
-  }
-  return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return saved === "light" ? "light" : "dark";
 }
 
 export const theme = ref<Theme>(initialTheme());
