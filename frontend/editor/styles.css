@@ -30,7 +30,12 @@ button {
   background: transparent;
   border: var(--border-width) solid var(--color-border-control);
   border-radius: var(--radius-base);
-  padding: var(--space-xs) var(--size-control-pad-x);
+  padding: 0 var(--size-control-pad-x);
+  height: var(--size-control);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
   cursor: pointer;
 }
 
@@ -62,7 +67,8 @@ select {
   background: var(--color-bg-surface);
   border: var(--border-width) solid var(--color-border-control);
   border-radius: var(--radius-base);
-  padding: var(--space-xs) var(--space-md);
+  padding: 0 var(--space-md);
+  height: var(--size-control);
 }
 
 .dialog-backdrop {
@@ -115,10 +121,9 @@ select {
 }
 
 .icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-xs);
+  width: var(--size-control);
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .visually-hidden {

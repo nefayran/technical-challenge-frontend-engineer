@@ -135,6 +135,7 @@ const BASE = {
     xl: "20px",
   },
   size: {
+    control: "30px",
     dot: "9px",
     swatch: "12px",
     inputNarrow: "90px",

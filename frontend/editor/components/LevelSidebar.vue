@@ -186,6 +186,7 @@ nav {
 
 .level-btn {
   width: 100%;
+  justify-content: flex-start;
   text-align: left;
   background: transparent;
   border-color: transparent;
