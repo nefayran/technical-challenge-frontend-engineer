@@ -6,14 +6,16 @@
   "scripts": {
     "game": "bun --hot frontend/game/serve.ts",
     "editor": "bun --hot frontend/editor/serve.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "e2e": "bun e2e/run.mjs"
   },
   "dependencies": {
     "vue": "^3.5.13"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "bun-plugin-vue3": "^1.1.0"
+    "bun-plugin-vue3": "^1.1.0",
+    "playwright": "^1.61.1"
   },
   "peerDependencies": {
     "typescript": "^5"
