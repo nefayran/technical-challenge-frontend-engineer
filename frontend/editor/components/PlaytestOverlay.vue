@@ -164,7 +164,9 @@ function draw(): void {
             ? Math.PI / 2
             : Math.PI;
     const phase = Math.abs(((px + py) % 1) - 0.5) * 2;
-    const opening = ((45 - 45 * phase) * Math.PI) / 180;
+    // Idle players freeze mid-animation; keep a minimum opening so a standing
+    // pacman still reads as a pacman rather than a dot.
+    const opening = (Math.max(10, 45 - 45 * phase) * Math.PI) / 180;
     ctx.fillStyle = isPoweredUp(player) ? colors.danger : colors.player;
     ctx.beginPath();
     const cx = sx(px) + SCALE / 2;
