@@ -5,8 +5,10 @@ export type { ToolKind, ToolPreview };
 
 // A stroke lives from pointer-down to pointer-up. Paint/erase/flood mutate the
 // grid live and accumulate a diff; line/rect only preview until commit.
+// move() returns the grid indices it touched so the caller can refresh the
+// overview bitmap incrementally.
 export interface ToolSession {
-  move(cell: CellPoint): void;
+  move(cell: CellPoint): ArrayLike<number>;
   preview(): ToolPreview | null;
   commit(): Patch | null;
 }
@@ -81,11 +83,13 @@ class BrushSession implements ToolSession {
     this.move(start);
   }
 
-  move(cell: CellPoint): void {
-    for (const idx of lineIndices(this.grid, this.last, cell)) {
+  move(cell: CellPoint): ArrayLike<number> {
+    const touched = lineIndices(this.grid, this.last, cell);
+    for (const idx of touched) {
       this.builder.set(idx, this.code);
     }
     this.last = cell;
+    return touched;
   }
 
   preview(): ToolPreview | null {
@@ -112,8 +116,9 @@ class ShapeSession implements ToolSession {
     this.shape = shape;
   }
 
-  move(cell: CellPoint): void {
+  move(cell: CellPoint): ArrayLike<number> {
     this.current = cell;
+    return [];
   }
 
   private indices(): number[] {
@@ -143,7 +148,9 @@ class FloodSession implements ToolSession {
     this.patch = inBounds(grid, start) ? floodFill(grid, start, code) : null;
   }
 
-  move(): void {}
+  move(): ArrayLike<number> {
+    return [];
+  }
 
   preview(): ToolPreview | null {
     return null;

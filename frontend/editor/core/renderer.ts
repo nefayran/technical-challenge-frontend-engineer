@@ -1,39 +1,38 @@
 import { CONFIG } from "../config.ts";
+import { canvasColors } from "../tokens.ts";
 import { CellCode, type Camera, type CellPoint, type LevelGrid, type ToolPreview } from "../types.ts";
 import { visibleCellRect } from "./camera.ts";
 import { isGhost, isPlayer, spawnDirection } from "./grid.ts";
 
-export const COLORS = {
-  background: "#1f1f1f",
-  boardEmpty: "#2b2b2b",
-  wall: "#3f51b5",
-  pellet: "#e0e0e0",
-  power: "#ffd54f",
-  player: "#ffeb3b",
-  ghost: "#ef5350",
-  gridLine: "rgba(255, 255, 255, 0.06)",
-  boardBorder: "#4caf50",
-  hover: "rgba(255, 255, 255, 0.35)",
-  preview: "rgba(255, 255, 255, 0.45)",
-} as const;
+function hexToRgb(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
 
-// RGBA per cell code for the 1px-per-cell overview bitmap.
-const OVERVIEW_PALETTE = new Uint8Array(12 * 4);
-{
-  const set = (code: CellCode, r: number, g: number, b: number) => {
-    OVERVIEW_PALETTE[code * 4] = r;
-    OVERVIEW_PALETTE[code * 4 + 1] = g;
-    OVERVIEW_PALETTE[code * 4 + 2] = b;
-    OVERVIEW_PALETTE[code * 4 + 3] = 255;
+// RGBA per cell code for the 1px-per-cell overview bitmap, built from the
+// active theme's palette.
+function buildOverviewPalette(): Uint8Array {
+  const c = canvasColors();
+  const palette = new Uint8Array(12 * 4);
+  const set = (code: CellCode, hex: string) => {
+    const [r, g, b] = hexToRgb(hex);
+    palette[code * 4] = r;
+    palette[code * 4 + 1] = g;
+    palette[code * 4 + 2] = b;
+    palette[code * 4 + 3] = 255;
   };
-  set(CellCode.Empty, 0x2b, 0x2b, 0x2b);
-  set(CellCode.Wall, 0x3f, 0x51, 0xb5);
-  set(CellCode.Pellet, 0x9e, 0x9e, 0x9e);
-  set(CellCode.PowerPellet, 0xff, 0xd5, 0x4f);
+  set(CellCode.Empty, c.boardEmpty);
+  set(CellCode.Wall, c.wall);
+  set(CellCode.Pellet, c.pellet);
+  set(CellCode.PowerPellet, c.power);
   for (let d = 0; d < 4; d++) {
-    set(CellCode.PlayerUp + d, 0xff, 0xeb, 0x3b);
-    set(CellCode.GhostUp + d, 0xef, 0x53, 0x50);
+    set(CellCode.PlayerUp + d, c.player);
+    set(CellCode.GhostUp + d, c.ghost);
   }
+  return palette;
 }
 
 // Below this zoom, cells are blitted from the overview bitmap instead of drawn
@@ -45,6 +44,8 @@ const SPAWN_ARROW_MIN_SCALE = CONFIG.render.spawnArrowMinScale;
 
 export type DrawOptions = {
   hover: CellPoint | null;
+  // Keyboard cursor (a11y navigation), drawn in the accent color.
+  cursor: CellPoint | null;
   preview: ToolPreview | null;
 };
 
@@ -62,6 +63,8 @@ export class Renderer {
   private overviewDirty = true;
   private width = 0;
   private height = 0;
+  private palette = buildOverviewPalette();
+  private colors = canvasColors();
 
   constructor(grid: LevelGrid) {
     this.overviewCanvas = document.createElement("canvas");
@@ -74,7 +77,11 @@ export class Renderer {
     this.reset(grid);
   }
 
+  // Rebuilds the overview bitmap; also picks up the active theme, so a theme
+  // switch is applied by calling reset with the current grid.
   reset(grid: LevelGrid): void {
+    this.palette = buildOverviewPalette();
+    this.colors = canvasColors();
     this.width = grid.width;
     this.height = grid.height;
     this.overviewCanvas.width = grid.width;
@@ -85,9 +92,9 @@ export class Renderer {
     for (let idx = 0; idx < cells.length; idx++) {
       const base = cells[idx]! * 4;
       const out = idx * 4;
-      px[out] = OVERVIEW_PALETTE[base]!;
-      px[out + 1] = OVERVIEW_PALETTE[base + 1]!;
-      px[out + 2] = OVERVIEW_PALETTE[base + 2]!;
+      px[out] = this.palette[base]!;
+      px[out + 1] = this.palette[base + 1]!;
+      px[out + 2] = this.palette[base + 2]!;
       px[out + 3] = 255;
     }
     this.overviewDirty = true;
@@ -100,9 +107,9 @@ export class Renderer {
       const idx = indices[k]!;
       const base = cells[idx]! * 4;
       const out = idx * 4;
-      px[out] = OVERVIEW_PALETTE[base]!;
-      px[out + 1] = OVERVIEW_PALETTE[base + 1]!;
-      px[out + 2] = OVERVIEW_PALETTE[base + 2]!;
+      px[out] = this.palette[base]!;
+      px[out + 1] = this.palette[base + 1]!;
+      px[out + 2] = this.palette[base + 2]!;
     }
     this.overviewDirty = true;
   }
@@ -127,7 +134,7 @@ export class Renderer {
     canvasHeight: number,
     options: DrawOptions,
   ): void {
-    ctx.fillStyle = COLORS.background;
+    ctx.fillStyle = this.colors.canvasBg;
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     const rect = visibleCellRect(camera, canvasWidth, canvasHeight, grid.width, grid.height);
@@ -154,7 +161,7 @@ export class Renderer {
       this.drawGlyphs(ctx, grid, camera, rect);
     }
 
-    ctx.strokeStyle = COLORS.boardBorder;
+    ctx.strokeStyle = this.colors.boardBorder;
     ctx.lineWidth = 1;
     ctx.strokeRect(
       (0 - camera.x) * scale,
@@ -167,13 +174,28 @@ export class Renderer {
       this.drawPreview(ctx, grid, camera, options.preview);
     }
     if (options.hover !== null && scale >= 2) {
-      const { i, j } = options.hover;
-      if (i >= 0 && i < grid.width && j >= 0 && j < grid.height) {
-        ctx.strokeStyle = COLORS.hover;
-        ctx.lineWidth = Math.max(1, scale / 12);
-        ctx.strokeRect((i - camera.x) * scale, (j - camera.y) * scale, scale, scale);
-      }
+      this.drawCellOutline(ctx, grid, camera, options.hover, this.colors.hover);
     }
+    if (options.cursor !== null) {
+      this.drawCellOutline(ctx, grid, camera, options.cursor, this.colors.boardBorder);
+    }
+  }
+
+  private drawCellOutline(
+    ctx: CanvasRenderingContext2D,
+    grid: LevelGrid,
+    camera: Camera,
+    cell: CellPoint,
+    color: string,
+  ): void {
+    const { i, j } = cell;
+    if (i < 0 || i >= grid.width || j < 0 || j >= grid.height) {
+      return;
+    }
+    const scale = camera.scale;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1, scale / 12);
+    ctx.strokeRect((i - camera.x) * scale, (j - camera.y) * scale, scale, scale);
   }
 
   private drawGlyphs(
@@ -185,7 +207,7 @@ export class Renderer {
     const scale = camera.scale;
     const cells = grid.cells;
 
-    ctx.fillStyle = COLORS.boardEmpty;
+    ctx.fillStyle = this.colors.boardEmpty;
     ctx.fillRect(
       (rect.i0 - camera.x) * scale,
       (rect.j0 - camera.y) * scale,
@@ -207,7 +229,7 @@ export class Renderer {
     }
 
     if (scale >= GRID_LINE_MIN_SCALE) {
-      ctx.strokeStyle = COLORS.gridLine;
+      ctx.strokeStyle = this.colors.gridLine;
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let i = rect.i0; i <= rect.i1; i++) {
@@ -235,19 +257,19 @@ export class Renderer {
     const cy = top + scale / 2;
 
     if (code === CellCode.Wall) {
-      ctx.fillStyle = COLORS.wall;
+      ctx.fillStyle = this.colors.wall;
       ctx.fillRect(left, top, scale, scale);
       return;
     }
     if (code === CellCode.Pellet) {
-      ctx.fillStyle = COLORS.pellet;
+      ctx.fillStyle = this.colors.pellet;
       ctx.beginPath();
       ctx.arc(cx, cy, Math.max(1, scale / 9), 0, Math.PI * 2);
       ctx.fill();
       return;
     }
     if (code === CellCode.PowerPellet) {
-      ctx.fillStyle = COLORS.power;
+      ctx.fillStyle = this.colors.power;
       ctx.beginPath();
       ctx.arc(cx, cy, Math.max(2, scale / 3.5), 0, Math.PI * 2);
       ctx.fill();
@@ -273,7 +295,7 @@ export class Renderer {
     const radius = scale * 0.42;
     const mouthCenter = [-Math.PI / 2, 0, Math.PI / 2, Math.PI][dir]!;
     const mouth = Math.PI / 5;
-    ctx.fillStyle = COLORS.player;
+    ctx.fillStyle = this.colors.player;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, radius, mouthCenter + mouth, mouthCenter + Math.PI * 2 - mouth);
@@ -293,7 +315,7 @@ export class Renderer {
     const radius = scale * 0.38;
     const bodyTop = cy - radius;
     const bodyBottom = cy + radius;
-    ctx.fillStyle = COLORS.ghost;
+    ctx.fillStyle = this.colors.ghost;
     ctx.beginPath();
     ctx.arc(cx, bodyTop + radius, radius, Math.PI, 0, false);
     ctx.lineTo(cx + radius, bodyBottom);
@@ -322,7 +344,7 @@ export class Renderer {
     }
     const [dx, dy] = DIR_VECTORS[dir]!;
     const len = scale * 0.3;
-    ctx.strokeStyle = "#1a1a1a";
+    ctx.strokeStyle = this.colors.spawnArrow;
     ctx.lineWidth = Math.max(1, scale / 14);
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -337,7 +359,7 @@ export class Renderer {
     preview: ToolPreview,
   ): void {
     const scale = camera.scale;
-    ctx.fillStyle = COLORS.preview;
+    ctx.fillStyle = this.colors.preview;
     for (let k = 0; k < preview.indices.length; k++) {
       const idx = preview.indices[k]!;
       const i = idx % grid.width;
