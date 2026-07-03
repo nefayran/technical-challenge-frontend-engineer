@@ -298,7 +298,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="canvas-host">
+  <div ref="containerRef" class="canvas-host" data-tour="canvas">
     <canvas
       ref="canvasRef"
       tabindex="0"

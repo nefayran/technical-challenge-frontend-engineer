@@ -11,12 +11,14 @@ const size = ref("");
 let timer: ReturnType<typeof setTimeout> | null = null;
 
 // Counting is O(cells); on a 1000x1000 board that is a full 1MB scan, so it
-// runs debounced instead of per stroke-move frame.
+// runs debounced (300ms after the last change) instead of per stroke-move
+// frame. A trailing debounce, not a gate: the last tick always lands, so the
+// counters cannot go stale when the grid arrives mid-window.
 watch(
   redrawTick,
   () => {
     if (timer !== null) {
-      return;
+      clearTimeout(timer);
     }
     timer = setTimeout(() => {
       timer = null;

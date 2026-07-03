@@ -56,9 +56,8 @@ describe("t()", () => {
 
   test("every locale defines the same key set", async () => {
     setLocale("en");
-    const source = await Bun.file(
-      new URL("./i18n.ts", import.meta.url).pathname,
-    ).text();
+    const { readFile } = await import("node:fs/promises");
+    const source = await readFile(new URL("./i18n.ts", import.meta.url), "utf-8");
     const dicts = [...source.matchAll(/const (en|ru|ja): Dict = \{([\s\S]*?)\n\};/g)];
     expect(dicts.length).toBe(3);
     const keySets = dicts.map(

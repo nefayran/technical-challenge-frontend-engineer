@@ -43,7 +43,7 @@ const palette = computed(() => [
 
 <template>
   <div class="toolbar" role="toolbar" :aria-label="t('app.title')">
-    <div class="group" role="group">
+    <div class="group" role="group" data-tour="tools">
       <button
         v-for="tool in tools"
         :key="tool.kind"
@@ -55,7 +55,7 @@ const palette = computed(() => [
         {{ tool.label }}
       </button>
     </div>
-    <div class="group palette" role="radiogroup">
+    <div class="group palette" role="radiogroup" data-tour="palette">
       <button
         v-for="entry in palette"
         :key="entry.code"
@@ -70,7 +70,7 @@ const palette = computed(() => [
         {{ entry.label }}
       </button>
     </div>
-    <div class="group">
+    <div class="group" data-tour="history">
       <button
         class="icon-btn"
         :disabled="!chrome.canUndo"

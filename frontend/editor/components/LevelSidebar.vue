@@ -66,7 +66,7 @@ function commitRename(): void {
 </script>
 
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar" data-tour="sidebar">
     <div class="header">
       <span>{{ t("sidebar.levels") }}</span>
       <button

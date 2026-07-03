@@ -10,6 +10,7 @@ import PlaytestOverlay from "./components/PlaytestOverlay.vue";
 import SaveStatus from "./components/SaveStatus.vue";
 import StatsPanel from "./components/StatsPanel.vue";
 import Toolbar from "./components/Toolbar.vue";
+import TourOverlay from "./components/TourOverlay.vue";
 import { LOCALES, locale, setLocale, t, type Locale } from "./i18n.ts";
 import {
   boot,
@@ -27,6 +28,25 @@ import type { ToolKind } from "./types.ts";
 
 const showGenerate = ref(false);
 const canvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null);
+
+const TOUR_SEEN_KEY = "maze-editor-tour-seen";
+const showTour = ref(false);
+
+function closeTour(): void {
+  showTour.value = false;
+  localStorage.setItem(TOUR_SEEN_KEY, "1");
+}
+
+// First visit: open the tour once the level has loaded, so every anchor
+// exists and the board is visible behind the spotlight.
+watch(
+  () => chrome.loading,
+  (loading) => {
+    if (!loading && chrome.loadError === "" && localStorage.getItem(TOUR_SEEN_KEY) === null) {
+      showTour.value = true;
+    }
+  },
+);
 
 const TOOL_SHORTCUTS: Record<string, ToolKind> = {
   "1": "paint",
@@ -102,28 +122,39 @@ onUnmounted(() => {
     <header>
       <h1>{{ t("app.title") }}</h1>
       <div class="header-right">
-        <SaveStatus />
+        <span data-tour="status"><SaveStatus /></span>
         <button
+          data-tour="play"
           :disabled="gridRef === null"
           :title="t('app.play')"
           @click="chrome.playtesting = true"
         >
           {{ t("app.play") }}
         </button>
-        <select
-          :value="locale"
-          :aria-label="'Language'"
-          @change="setLocale(($event.target as HTMLSelectElement).value as Locale)"
-        >
-          <option v-for="l in LOCALES" :key="l" :value="l">{{ l.toUpperCase() }}</option>
-        </select>
+        <span data-tour="theme" class="header-right-group">
+          <select
+            :value="locale"
+            :aria-label="'Language'"
+            @change="setLocale(($event.target as HTMLSelectElement).value as Locale)"
+          >
+            <option v-for="l in LOCALES" :key="l" :value="l">{{ l.toUpperCase() }}</option>
+          </select>
+          <button
+            class="icon-btn"
+            :aria-label="`Theme: ${theme}`"
+            :title="`Theme: ${theme}`"
+            @click="toggleTheme()"
+          >
+            <Icon :name="theme === 'dark' ? 'sun' : 'moon'" />
+          </button>
+        </span>
         <button
-          class="icon-btn"
-          :aria-label="`Theme: ${theme}`"
-          :title="`Theme: ${theme}`"
-          @click="toggleTheme()"
+          class="icon-btn help-btn"
+          :aria-label="t('tour.open')"
+          :title="t('tour.open')"
+          @click="showTour = true"
         >
-          <Icon :name="theme === 'dark' ? 'sun' : 'moon'" />
+          ?
         </button>
       </div>
     </header>
@@ -150,6 +181,7 @@ onUnmounted(() => {
     <GenerateDialog v-if="showGenerate" @close="showGenerate = false" />
     <ConflictDialog v-if="chrome.conflict !== null" />
     <PlaytestOverlay v-if="chrome.playtesting" @close="chrome.playtesting = false" />
+    <TourOverlay v-if="showTour" @close="closeTour()" />
   </div>
 </template>
 
@@ -182,6 +214,16 @@ h1 {
   display: flex;
   align-items: center;
   gap: var(--space-lg);
+}
+
+.header-right-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.help-btn {
+  font-weight: var(--font-weight-bold);
 }
 
 .draft-banner,

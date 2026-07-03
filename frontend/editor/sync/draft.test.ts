@@ -47,7 +47,7 @@ describe("draft round-trip", () => {
   test("survives a large grid through base64", () => {
     const grid = createGrid(200, 200);
     for (let i = 0; i < grid.cells.length; i += 7) {
-      grid.cells[i] = (i % 11) as CellCode;
+      grid.cells[i] = i % 11;
     }
     saveDraft("big", 1, grid);
     const loaded = loadDraft("big")!;
