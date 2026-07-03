@@ -95,10 +95,16 @@ const palette = computed(() => [
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-lg);
-  padding: var(--space-md) var(--space-lg);
+  gap: var(--space-xl);
+  padding: var(--space-lg) var(--space-xl);
   border-bottom: var(--border-width) solid var(--color-border);
   background: var(--color-bg-panel);
+}
+
+.toolbar button {
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .group {

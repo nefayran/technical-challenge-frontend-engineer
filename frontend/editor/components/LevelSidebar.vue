@@ -116,8 +116,12 @@ function shortId(id: string): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-lg) var(--space-lg);
   font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--font-tracking-wide);
+  color: var(--color-text-dim);
   border-bottom: var(--border-width) solid var(--color-border);
 }
 
