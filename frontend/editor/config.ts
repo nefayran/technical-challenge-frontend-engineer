@@ -41,6 +41,16 @@ export const CONFIG = {
     stepDenominator: 8,
     cameraFollowLerp: 0.15,
   },
+  tour: {
+    // Spotlight padding around the target and card geometry, in px. The card
+    // width must match tokens.size.tourCard.
+    highlightPaddingPx: 6,
+    cardWidthPx: 320,
+    cardGapPx: 12,
+    cardEstimatedHeightPx: 240,
+    // Targets taller than this viewport fraction get a centered card.
+    centerCardTargetFraction: 0.6,
+  },
   newLevel: {
     defaultWidth: 28,
     defaultHeight: 31,

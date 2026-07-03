@@ -16,6 +16,7 @@ import { serializeAscii2d } from "../core/grid.ts";
 import { gridRef } from "../store.ts";
 import { canvasColors } from "../tokens.ts";
 import Icon from "./Icon.vue";
+import KbdText from "./KbdText.vue";
 
 const emit = defineEmits<{ close: [] }>();
 
@@ -282,10 +283,10 @@ onUnmounted(() => {
     <canvas ref="canvasRef" />
     <div class="hud">
       <span>{{ pelletsLeft }} {{ t("playtest.pellets") }}</span>
-      <span>{{ t("playtest.exit") }}</span>
+      <span><KbdText :text="t('playtest.exit')" /></span>
     </div>
     <div v-if="finished !== ''" class="banner">
-      {{ finished === "eaten" ? t("playtest.eaten") : t("playtest.cleared") }}
+      <KbdText :text="finished === 'eaten' ? t('playtest.eaten') : t('playtest.cleared')" />
     </div>
     <button class="close icon-btn" :aria-label="t('generate.cancel')" @click="emit('close')">
       <Icon name="close" />

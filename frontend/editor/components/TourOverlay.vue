@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 
+import { CONFIG } from "../config.ts";
 import { t } from "../i18n.ts";
+import KbdText from "./KbdText.vue";
 
 // Spotlight tour: each step targets a [data-tour] anchor. The highlight box
 // carves a hole in the backdrop via a huge box-shadow; the card flips above
 // or below the target depending on the free space.
 const emit = defineEmits<{ close: [] }>();
 
+// "welcome" has no anchor and renders as a centered intro card; "help" points
+// at the ? button so replaying the tour is discoverable.
 const STEP_KEYS = [
+  "welcome",
   "tools",
   "palette",
   "history",
@@ -17,6 +22,7 @@ const STEP_KEYS = [
   "status",
   "play",
   "theme",
+  "help",
 ] as const;
 
 const stepIndex = ref(0);
@@ -26,9 +32,9 @@ const nextButton = ref<HTMLButtonElement | null>(null);
 const stepKey = computed(() => STEP_KEYS[stepIndex.value]!);
 const isLast = computed(() => stepIndex.value === STEP_KEYS.length - 1);
 
-const PADDING = 6;
-const CARD_WIDTH = 320;
-const CARD_GAP = 12;
+const PADDING = CONFIG.tour.highlightPaddingPx;
+const CARD_WIDTH = CONFIG.tour.cardWidthPx;
+const CARD_GAP = CONFIG.tour.cardGapPx;
 
 function measure(): void {
   const el = document.querySelector(`[data-tour="${stepKey.value}"]`);
@@ -58,21 +64,36 @@ const highlightStyle = computed(() => {
   };
 });
 
+const CARD_EST_HEIGHT = CONFIG.tour.cardEstimatedHeightPx;
+
 const cardStyle = computed(() => {
   const box = target.value;
+  // No anchor (welcome step) — a centered card.
   if (box === null) {
     return { left: "50%", top: "50%", transform: "translate(-50%, -50%)" };
   }
-  const below = box.y + box.h + CARD_GAP;
-  const fitsBelow = below + 220 < window.innerHeight;
+  // A target that fills most of the screen (the canvas): center the card on
+  // it instead of trying to squeeze the card off-viewport.
+  if (box.h > window.innerHeight * CONFIG.tour.centerCardTargetFraction) {
+    return { left: "50%", top: "50%", transform: "translate(-50%, -50%)" };
+  }
   const left = Math.max(
     CARD_GAP,
     Math.min(box.x, window.innerWidth - CARD_WIDTH - CARD_GAP),
   );
-  if (fitsBelow) {
+  const below = box.y + box.h + CARD_GAP;
+  if (below + CARD_EST_HEIGHT <= window.innerHeight) {
     return { left: `${left}px`, top: `${below}px` };
   }
-  return { left: `${left}px`, bottom: `${window.innerHeight - box.y + CARD_GAP}px` };
+  const above = box.y - CARD_GAP - CARD_EST_HEIGHT;
+  if (above >= CARD_GAP) {
+    return { left: `${left}px`, bottom: `${window.innerHeight - box.y + CARD_GAP}px` };
+  }
+  // Neither side fits — clamp inside the viewport next to the target.
+  return {
+    left: `${left}px`,
+    top: `${Math.max(CARD_GAP, window.innerHeight - CARD_EST_HEIGHT - CARD_GAP)}px`,
+  };
 });
 
 async function goTo(index: number): Promise<void> {
@@ -116,13 +137,14 @@ onUnmounted(() => {
 
 <template>
   <div class="tour" role="dialog" aria-modal="true" :aria-label="t(`tour.${stepKey}.title`)">
+    <div v-if="target === null" class="backdrop" />
     <div class="highlight" :style="highlightStyle" />
     <div class="card" :style="cardStyle">
       <div class="card-header">
         <h3>{{ t(`tour.${stepKey}.title`) }}</h3>
         <span class="counter">{{ stepIndex + 1 }}/{{ STEP_KEYS.length }}</span>
       </div>
-      <p>{{ t(`tour.${stepKey}.body`) }}</p>
+      <p><KbdText :text="t(`tour.${stepKey}.body`)" /></p>
       <div class="controls">
         <button class="skip" @click="emit('close')">{{ t("tour.skip") }}</button>
         <div class="nav">
@@ -154,6 +176,12 @@ onUnmounted(() => {
   z-index: var(--z-conflict);
 }
 
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-backdrop);
+}
+
 .highlight {
   position: fixed;
   border: var(--border-width) solid var(--color-accent);
@@ -164,7 +192,7 @@ onUnmounted(() => {
 
 .card {
   position: fixed;
-  width: 320px;
+  width: var(--size-tour-card);
   background: var(--color-bg-surface);
   border: var(--border-width) solid var(--color-border-strong);
   padding: var(--space-xl);

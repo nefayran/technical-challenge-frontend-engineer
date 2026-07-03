@@ -120,6 +120,18 @@ select {
   font-size: var(--font-size-sm);
 }
 
+kbd {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-kbd);
+  padding: var(--space-xxs) var(--space-sm);
+  border: var(--border-width) solid var(--color-border-control);
+  border-bottom-width: var(--space-xxs);
+  border-radius: var(--radius-base);
+  background: var(--color-bg-control);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
 .icon-btn {
   width: var(--size-control);
   padding: 0;

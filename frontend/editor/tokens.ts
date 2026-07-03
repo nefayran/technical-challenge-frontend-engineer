@@ -143,6 +143,7 @@ const BASE = {
     sidebar: "190px",
     dialogMin: "260px",
     dialogWide: "440px",
+    tourCard: "320px",
     controlPadX: "10px",
   },
   border: {
@@ -158,6 +159,7 @@ const BASE = {
     sizeSm: "0.8rem",
     sizeMd: "0.85rem",
     sizeLg: "1rem",
+    sizeKbd: "0.78em",
     weightBold: "500",
     trackingWide: "0.08em",
   },

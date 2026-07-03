@@ -150,6 +150,7 @@ onUnmounted(() => {
         </span>
         <button
           class="icon-btn help-btn"
+          data-tour="help"
           :aria-label="t('tour.open')"
           :title="t('tour.open')"
           @click="showTour = true"
