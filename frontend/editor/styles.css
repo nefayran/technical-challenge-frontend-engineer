@@ -27,7 +27,7 @@ a {
 button {
   font: inherit;
   color: inherit;
-  background: var(--color-bg-control);
+  background: transparent;
   border: var(--border-width) solid var(--color-border-control);
   border-radius: var(--radius-md);
   padding: var(--space-xs) var(--size-control-pad-x);
@@ -46,6 +46,7 @@ button:disabled {
 button.active {
   background: var(--color-accent-bg);
   border-color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 button:focus-visible,

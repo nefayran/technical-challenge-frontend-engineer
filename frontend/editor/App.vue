@@ -171,6 +171,9 @@ header {
 h1 {
   margin: 0;
   font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--font-tracking-wide);
 }
 
 .header-right {

@@ -18,7 +18,7 @@ Run: `bun install && uv sync`, then `uv run backend` and `bun run editor` → ht
 
 **Playtest.** The engine is pure TS, so "▶ Play" runs the real engine on the serialized grid in an overlay — the designer verifies the level without leaving the editor. The game's naive full-board draw would not survive 1000×1000, so the playtest uses a follow camera with the same culling, and pellet lookup rides the engine's (x, y)-sorted pellet array via binary search.
 
-**Chrome.** Design tokens are one TS object injected as CSS custom properties (dark/light themes; the canvas reads the same tokens, so a theme switch rebuilds the overview bitmap). UI strings en/ru/ja via a ~30-line `t()` — vue-i18n felt like a framework the brief said not to add. Keyboard: 1–6 tools, Cmd/Ctrl+Z/Shift+Z, F fit, Space pan; the canvas is focusable with an arrow-key cell cursor, Enter to stamp, and an aria-live position readout.
+**Chrome.** Design tokens are one TS object injected as CSS custom properties (dark/light themes; the canvas reads the same tokens, so a theme switch rebuilds the overview bitmap). The visual language borrows from noeon.ai's palette — near-black ground, hairline slate borders, zero radii, violet/magenta accents — re-expressed in tokens, no assets copied. UI strings en/ru/ja via a ~30-line `t()` — vue-i18n felt like a framework the brief said not to add. Keyboard: 1–6 tools, Cmd/Ctrl+Z/Shift+Z, F fit, Space pan; the canvas is focusable with an arrow-key cell cursor, Enter to stamp, and an aria-live position readout.
 
 ## What I read, and what I chose not to change
 
