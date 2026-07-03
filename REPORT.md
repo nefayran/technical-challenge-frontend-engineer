@@ -1,6 +1,6 @@
 # Level editor — report
 
-Run: `bun install && uv sync`, then `uv run backend` and `bun run editor` → http://localhost:3001. Tests: `bun test`.
+Run: `bun install && uv sync`, then `uv run backend` and `bun run editor` → http://localhost:3001. Tests: `bun test`; e2e: `bun run e2e` (once before: `bunx playwright install chromium`).
 
 ## Technical decisions
 
@@ -18,11 +18,11 @@ Run: `bun install && uv sync`, then `uv run backend` and `bun run editor` → ht
 
 **Playtest.** Engine is pure TS — "Play" runs it on the serialized grid in an overlay. Full-board draw dies at 1000×1000, so: follow camera, same culling, pellet lookup by binary search on the engine's (x, y)-sorted array.
 
-**Chrome.** Design tokens: one TS object injected as CSS custom properties and read by the canvas palette; a theme switch rebuilds the overview bitmap. Palette from noeon.ai — near-black ground, hairline borders, zero radii, violet/magenta accents — tokens only, no assets copied. i18n en/ru/ja via a ~30-line `t()`; vue-i18n rejected as a new framework. Keyboard: 1–6 tools, Cmd/Ctrl+Z/Shift+Z, F fit, Space pan; canvas is focusable — arrow-key cell cursor, Enter stamps, aria-live position readout.
+**Chrome.** Design tokens: one TS object injected as CSS custom properties and read by the canvas palette; a theme switch rebuilds the overview bitmap. Palette from noeon.ai — near-black ground, hairline borders, zero radii, violet/magenta accents — tokens only, no assets copied. i18n en/ru/ja via a ~30-line `t()`; vue-i18n rejected as a new framework. Keyboard: 1–6 tools, Cmd/Ctrl+Z/Shift+Z, F fit, Space pan; canvas is focusable — arrow-key cell cursor, Enter stamps, aria-live position readout. A spotlight tour (auto-opens on first visit, replayable from ?) walks through every control, with key names rendered as kbd chips. Levels have names: an optional `name` on the backend model, inline rename in the sidebar riding the same autosave pipeline as board edits.
 
 ## What I read, and what I chose not to change
 
-Read all of `frontend/game/engine/` (board/ascii2d/coord/player/ghost/engine), the Vue playground, and both backend packages before writing code. Not changed: the engine (including the lossy `toAscii2d` — the editor works around it rather than "fixing" shipped behavior other code may rely on; noted here instead), the game playground, the generator, the API surface and its version contract. Changed: `storage.py`/`app.py` as described, plus `package.json` scripts.
+Read all of `frontend/game/engine/` (board/ascii2d/coord/player/ghost/engine), the Vue playground, and both backend packages before writing code. Not changed: the engine (including the lossy `toAscii2d` — the editor works around it rather than "fixing" shipped behavior other code may rely on; noted here instead), the game playground, the generator, and the version/conflict contract. Changed: `storage.py`/`app.py` for persistence as described; the API gained one backward-compatible field — an optional level `name` on store/load and `{id, name}` summaries from `/levels`; plus `package.json` scripts.
 
 ## AI usage
 
@@ -34,4 +34,5 @@ Claude Code wrote most of the code. My part:
 - **Same prompt-review-correct pattern** for i18n (hand-rolled, en/ru/ja), keyboard/ARIA accessibility with an arrow-key cell cursor on the canvas, hand-drawn SVG icons replacing emoji glyphs, and level naming end-to-end.
 - **Verification**: 73 unit tests, ~99% line coverage of the editor code (`bun test --coverage`; the given engine is excluded), plus a committed Playwright e2e suite (`bun run e2e`, test-only devDependency) that boots its own backend and editor and runs four scenarios: paint → autosave → version bump, 1000×1000 frame budget, a forced 409 with a foreign write, and offline-crash-draft-restore with the backend killed and revived mid-session.
 - **What it produced by default and I refused to keep**: raw hex/px values inline in component CSS instead of a token system; types duplicated across modules instead of one `types.ts`; magic numbers scattered through the code instead of a single `config.ts`; a generic look with emoji as icons instead of a deliberate visual language; no keyboard access or ARIA on the canvas. Each of these shipped only after I made it redo the work properly.
+
 Open question I did not get to: collaborative editing on top of this API — per-cell diffs against the 409 snapshot would allow three-way merge of non-overlapping edits instead of the binary theirs/mine choice, without any backend change.
