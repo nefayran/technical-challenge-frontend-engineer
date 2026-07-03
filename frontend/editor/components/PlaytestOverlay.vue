@@ -312,7 +312,7 @@ canvas {
   padding: var(--space-sm) var(--space-lg);
   background: var(--color-backdrop);
   color: var(--color-text);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-base);
   font-size: var(--font-size-md);
 }
 
@@ -324,7 +324,7 @@ canvas {
   padding: var(--space-lg) var(--space-xl);
   background: var(--color-backdrop);
   border: var(--border-width) solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-base);
   font-size: var(--font-size-lg);
 }
 

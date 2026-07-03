@@ -29,7 +29,7 @@ button {
   color: inherit;
   background: transparent;
   border: var(--border-width) solid var(--color-border-control);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-base);
   padding: var(--space-xs) var(--size-control-pad-x);
   cursor: pointer;
 }
@@ -61,7 +61,7 @@ select {
   color: inherit;
   background: var(--color-bg-surface);
   border: var(--border-width) solid var(--color-border-control);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-base);
   padding: var(--space-xs) var(--space-md);
 }
 
@@ -78,7 +78,7 @@ select {
 .dialog {
   background: var(--color-bg-surface);
   border: var(--border-width) solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-base);
   padding: var(--space-xl);
   display: flex;
   flex-direction: column;

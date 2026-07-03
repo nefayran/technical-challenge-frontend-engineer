@@ -147,10 +147,9 @@ const BASE = {
   border: {
     width: "1px",
   },
+  // noeon look is sharp-cornered; one knob to bring radii back if it changes.
   radius: {
-    sm: "0px",
-    md: "0px",
-    lg: "0px",
+    base: "0px",
   },
   font: {
     body: '"Suisse Intl", -apple-system, system-ui, "Segoe UI", "Helvetica Neue", sans-serif',

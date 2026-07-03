@@ -124,7 +124,7 @@ const palette = computed(() => [
 .swatch {
   width: var(--size-swatch);
   height: var(--size-swatch);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-base);
   display: inline-block;
 }
 </style>
