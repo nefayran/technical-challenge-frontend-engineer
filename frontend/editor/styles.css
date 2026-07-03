@@ -114,6 +114,13 @@ select {
   font-size: var(--font-size-sm);
 }
 
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xs);
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

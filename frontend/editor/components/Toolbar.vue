@@ -4,6 +4,7 @@ import { computed } from "vue";
 import { t } from "../i18n.ts";
 import { CellCode, type ToolKind } from "../types.ts";
 import { chrome, redo, undo } from "../store.ts";
+import Icon from "./Icon.vue";
 
 const emit = defineEmits<{ fit: [] }>();
 
@@ -71,20 +72,22 @@ const palette = computed(() => [
     </div>
     <div class="group">
       <button
+        class="icon-btn"
         :disabled="!chrome.canUndo"
         :title="`${t('tool.undo')} (Cmd/Ctrl+Z)`"
         :aria-label="t('tool.undo')"
         @click="undo()"
       >
-        ↩︎
+        <Icon name="undo" :size="14" />
       </button>
       <button
+        class="icon-btn"
         :disabled="!chrome.canRedo"
         :title="`${t('tool.redo')} (Shift+Cmd/Ctrl+Z)`"
         :aria-label="t('tool.redo')"
         @click="redo()"
       >
-        ↪︎
+        <Icon name="redo" :size="14" />
       </button>
       <button :title="`${t('tool.fit.hint')} (F)`" @click="emit('fit')">{{ t("tool.fit") }}</button>
     </div>

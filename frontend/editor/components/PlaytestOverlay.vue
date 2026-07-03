@@ -15,6 +15,7 @@ import { t } from "../i18n.ts";
 import { serializeAscii2d } from "../core/grid.ts";
 import { gridRef } from "../store.ts";
 import { canvasColors } from "../tokens.ts";
+import Icon from "./Icon.vue";
 
 const emit = defineEmits<{ close: [] }>();
 
@@ -286,7 +287,9 @@ onUnmounted(() => {
     <div v-if="finished !== ''" class="banner">
       {{ finished === "eaten" ? t("playtest.eaten") : t("playtest.cleared") }}
     </div>
-    <button class="close" :aria-label="t('generate.cancel')" @click="emit('close')">✕</button>
+    <button class="close icon-btn" :aria-label="t('generate.cancel')" @click="emit('close')">
+      <Icon name="close" />
+    </button>
   </div>
 </template>
 

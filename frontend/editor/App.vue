@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted, ref, watch } from "vue";
 
 import ConflictDialog from "./components/ConflictDialog.vue";
+import Icon from "./components/Icon.vue";
 import EditorCanvas from "./components/EditorCanvas.vue";
 import GenerateDialog from "./components/GenerateDialog.vue";
 import LevelSidebar from "./components/LevelSidebar.vue";
@@ -117,11 +118,12 @@ onUnmounted(() => {
           <option v-for="l in LOCALES" :key="l" :value="l">{{ l.toUpperCase() }}</option>
         </select>
         <button
+          class="icon-btn"
           :aria-label="`Theme: ${theme}`"
           :title="`Theme: ${theme}`"
           @click="toggleTheme()"
         >
-          {{ theme === "dark" ? "☀️" : "🌙" }}
+          <Icon :name="theme === 'dark' ? 'sun' : 'moon'" />
         </button>
       </div>
     </header>

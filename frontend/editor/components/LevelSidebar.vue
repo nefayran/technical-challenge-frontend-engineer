@@ -3,6 +3,7 @@ import { nextTick, ref, watch } from "vue";
 
 import { CONFIG } from "../config.ts";
 import { t } from "../i18n.ts";
+import Icon from "./Icon.vue";
 import {
   chrome,
   duplicateLevel,
@@ -68,8 +69,13 @@ function commitRename(): void {
   <aside class="sidebar">
     <div class="header">
       <span>{{ t("sidebar.levels") }}</span>
-      <button :title="t('sidebar.refresh')" :aria-label="t('sidebar.refresh')" @click="refreshLevelList()">
-        ⟳
+      <button
+        class="icon-btn"
+        :title="t('sidebar.refresh')"
+        :aria-label="t('sidebar.refresh')"
+        @click="refreshLevelList()"
+      >
+        <Icon name="refresh" :size="14" />
       </button>
     </div>
     <nav :aria-label="t('sidebar.levels')">
