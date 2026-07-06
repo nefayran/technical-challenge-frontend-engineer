@@ -137,6 +137,7 @@ const en: Dict = {
   "tour.done": "Done",
   "tour.skip": "Skip tour",
   "tour.open": "Show the tour",
+  "toast.remoteUpdate": "Updated from the server — v{version}",
 };
 
 const ru: Dict = {
@@ -249,6 +250,7 @@ const ru: Dict = {
   "tour.done": "Готово",
   "tour.skip": "Пропустить",
   "tour.open": "Показать тур",
+  "toast.remoteUpdate": "Обновлено с сервера — v{version}",
 };
 
 const ja: Dict = {
@@ -361,6 +363,7 @@ const ja: Dict = {
   "tour.done": "完了",
   "tour.skip": "スキップ",
   "tour.open": "ツアーを表示",
+  "toast.remoteUpdate": "サーバーから更新されました — v{version}",
 };
 
 const DICTS: Record<Locale, Dict> = { en, ru, ja };

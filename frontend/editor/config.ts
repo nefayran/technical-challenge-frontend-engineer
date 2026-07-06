@@ -30,6 +30,10 @@ export const CONFIG = {
     retryBaseMs: 1000,
     retryMaxMs: 15000,
     requestTimeoutMs: 20000,
+    // Live pull: while synced, the current level is re-checked at this
+    // interval and remote updates are applied in place.
+    pollIntervalMs: 5000,
+    levelListRefreshMs: 15000,
   },
   draft: {
     // Local crash-recovery draft (localStorage) write throttle.

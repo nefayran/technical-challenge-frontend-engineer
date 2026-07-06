@@ -17,6 +17,7 @@ import { chromium } from "playwright";
 import editorBasics from "./scenarios/editor-basics.mjs";
 import perf1000 from "./scenarios/perf-1000.mjs";
 import conflict409 from "./scenarios/conflict-409.mjs";
+import liveUpdate from "./scenarios/live-update.mjs";
 import offlineDraft from "./scenarios/offline-draft.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -104,6 +105,7 @@ async function main() {
     ["editor-basics", editorBasics],
     ["perf-1000", perf1000],
     ["conflict-409", conflict409],
+    ["live-update", liveUpdate],
     ["offline-draft", offlineDraft],
   ];
 
@@ -112,6 +114,11 @@ async function main() {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       colorScheme: "dark",
+    });
+    // The onboarding tour auto-opens for first-time visitors and its overlay
+    // would swallow the scripted mouse input.
+    await context.addInitScript(() => {
+      localStorage.setItem("maze-editor-tour-seen", "1");
     });
     const started = Date.now();
     try {

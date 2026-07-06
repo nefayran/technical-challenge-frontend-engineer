@@ -12,6 +12,9 @@ export type SyncEvents = {
   onStateChange: (state: SyncState) => void;
   onVersionChange: (version: number) => void;
   onConflict: (server: LevelResponse) => void;
+  // A newer version appeared on the server while we were synced (someone else
+  // saved). The store applies it in place; no dialog, nothing local is lost.
+  onRemoteUpdate: (server: LevelResponse) => void;
 };
 
 export class SyncController {
@@ -24,6 +27,7 @@ export class SyncController {
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private retryDelay: number = CONFIG.sync.retryBaseMs;
   private editsSinceSnapshot = false;
   private saveInFlight = false;
@@ -41,6 +45,43 @@ export class SyncController {
     this.serialize = serialize;
     this.nameOf = nameOf;
     this.events = events;
+    this.schedulePoll();
+  }
+
+  // -- live pull ------------------------------------------------------------
+
+  private schedulePoll(): void {
+    if (this.disposed) {
+      return;
+    }
+    if (this.pollTimer !== null) {
+      clearTimeout(this.pollTimer);
+    }
+    this.pollTimer = setTimeout(() => {
+      this.pollTimer = null;
+      void this.poll();
+    }, CONFIG.sync.pollIntervalMs);
+  }
+
+  private async poll(): Promise<void> {
+    // Only pull while fully synced: any local edits go through the save path
+    // and its 409 reconciliation instead. Hidden tabs skip the request.
+    const hidden = typeof document !== "undefined" && document.hidden;
+    if (this.disposed || this.state !== "synced" || hidden) {
+      this.schedulePoll();
+      return;
+    }
+    try {
+      const server = await loadLevel(this.levelId);
+      if (server.version > this.baseVersion && this.state === "synced") {
+        this.setVersion(server.version);
+        this.events.onRemoteUpdate(server);
+      }
+    } catch {
+      // Unreachable backend surfaces through the save path; polling just
+      // tries again later.
+    }
+    this.schedulePoll();
   }
 
   get currentState(): SyncState {
@@ -190,6 +231,9 @@ export class SyncController {
     }
     if (this.retryTimer !== null) {
       clearTimeout(this.retryTimer);
+    }
+    if (this.pollTimer !== null) {
+      clearTimeout(this.pollTimer);
     }
   }
 }

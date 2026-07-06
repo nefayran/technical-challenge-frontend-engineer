@@ -8,6 +8,8 @@ import { SyncController } from "./syncStore.ts";
 (CONFIG.sync as { saveDebounceMs: number }).saveDebounceMs = 5;
 (CONFIG.sync as { retryBaseMs: number }).retryBaseMs = 5;
 (CONFIG.sync as { retryMaxMs: number }).retryMaxMs = 20;
+// Keep the live-pull out of the way unless a test opts in.
+(CONFIG.sync as { pollIntervalMs: number }).pollIntervalMs = 60_000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -37,12 +39,14 @@ function makeController(content: () => string, name = () => "lvl-name") {
   const states: SyncState[] = [];
   const versions: number[] = [];
   const conflicts: unknown[] = [];
+  const updates: unknown[] = [];
   const controller = new SyncController("lvl", 1, content, name, {
     onStateChange: (s) => states.push(s),
     onVersionChange: (v) => versions.push(v),
     onConflict: (c) => conflicts.push(c),
+    onRemoteUpdate: (u) => updates.push(u),
   });
-  return { controller, states, versions, conflicts };
+  return { controller, states, versions, conflicts, updates };
 }
 
 let board = "AAAA";
@@ -237,6 +241,39 @@ describe("offline", () => {
     expect(states.at(-1)).toBe("synced");
     expect(controller.currentState).toBe("synced");
     expect(controller.id).toBe("lvl");
+    controller.dispose();
+  });
+
+  test("live pull adopts a newer server version while synced", async () => {
+    (CONFIG.sync as { pollIntervalMs: number }).pollIntervalMs = 10;
+    installFetch(() => ({
+      status: 200,
+      json: { id: "lvl", version: 9, ascii2d: "REMOTE", name: "renamed" },
+    }));
+    const { controller, updates, states } = makeController(() => board);
+    await sleep(60);
+    (CONFIG.sync as { pollIntervalMs: number }).pollIntervalMs = 60_000;
+    expect(updates.length).toBeGreaterThanOrEqual(1);
+    expect(controller.version).toBe(9);
+    expect(states).not.toContain("conflict");
+    controller.dispose();
+  });
+
+  test("live pull stays quiet while dirty", async () => {
+    (CONFIG.sync as { pollIntervalMs: number }).pollIntervalMs = 10;
+    (CONFIG.sync as { saveDebounceMs: number }).saveDebounceMs = 500;
+    installFetch((url) => {
+      if (url.includes("/level/store")) {
+        return { status: 200, json: { id: "lvl", version: 2, ascii2d: board, name: "n" } };
+      }
+      return { status: 200, json: { id: "lvl", version: 9, ascii2d: "REMOTE", name: "n" } };
+    });
+    const { controller, updates } = makeController(() => board);
+    controller.markDirty();
+    await sleep(60);
+    (CONFIG.sync as { pollIntervalMs: number }).pollIntervalMs = 60_000;
+    (CONFIG.sync as { saveDebounceMs: number }).saveDebounceMs = 5;
+    expect(updates.length).toBe(0);
     controller.dispose();
   });
 

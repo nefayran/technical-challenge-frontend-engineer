@@ -6,6 +6,7 @@
 import { reactive, ref, shallowRef } from "vue";
 
 import { CONFIG } from "./config.ts";
+import { t } from "./i18n.ts";
 import {
   CellCode,
   type CellPoint,
@@ -40,6 +41,7 @@ export const chrome = reactive({
   loadError: "",
   conflict: null as LevelResponse | null,
   draftOffer: null as DraftOffer | null,
+  toast: "",
   canUndo: false,
   canRedo: false,
   playtesting: false,
@@ -53,6 +55,42 @@ const undoStack = new UndoStack();
 let sync: SyncController | null = null;
 let activeSession: ToolSession | null = null;
 let draftTimer: ReturnType<typeof setTimeout> | null = null;
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
+let listRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
+function showToast(message: string): void {
+  chrome.toast = message;
+  if (toastTimer !== null) {
+    clearTimeout(toastTimer);
+  }
+  toastTimer = setTimeout(() => {
+    chrome.toast = "";
+  }, 4000);
+}
+
+// Replace the local board with server content. Same dimensions: applied as a
+// single undoable patch, so nothing local becomes unreachable; different
+// dimensions: full swap (undo history cannot span a resize).
+function applyServerGrid(serverGrid: LevelGrid): void {
+  const grid = gridRef.value;
+  if (grid !== null && grid.width === serverGrid.width && grid.height === serverGrid.height) {
+    const builder = new PatchBuilder(grid);
+    for (let i = 0; i < grid.cells.length; i++) {
+      if (grid.cells[i] !== serverGrid.cells[i]) {
+        builder.set(i, serverGrid.cells[i]!);
+      }
+    }
+    const patch = builder.build();
+    if (patch !== null) {
+      undoStack.push(patch);
+      rendererRef.value?.applyCells(grid, patch.indices);
+      refreshUndoFlags();
+    }
+    requestRedraw();
+  } else {
+    adoptGrid(serverGrid);
+  }
+}
 
 export function requestRedraw(): void {
   redrawTick.value++;
@@ -98,6 +136,11 @@ function attachSync(levelId: string, version: number, name: string): void {
       },
       onConflict: (server) => {
         chrome.conflict = server;
+      },
+      onRemoteUpdate: (server) => {
+        applyServerGrid(parseAscii2d(server.ascii2d));
+        chrome.levelName = server.name;
+        showToast(t("toast.remoteUpdate", { version: server.version }));
       },
     },
   );
@@ -302,27 +345,8 @@ export function resolveConflictTakeTheirs(): void {
   if (server === null || sync === null) {
     return;
   }
-  const serverGrid = parseAscii2d(server.ascii2d);
-  const grid = gridRef.value;
-  if (grid !== null && grid.width === serverGrid.width && grid.height === serverGrid.height) {
-    // Same dimensions: apply the server content as one undoable patch, so
-    // "take theirs" does not destroy the local edits.
-    const builder = new PatchBuilder(grid);
-    for (let i = 0; i < grid.cells.length; i++) {
-      if (grid.cells[i] !== serverGrid.cells[i]) {
-        builder.set(i, serverGrid.cells[i]!);
-      }
-    }
-    const patch = builder.build();
-    if (patch !== null) {
-      undoStack.push(patch);
-      rendererRef.value?.applyCells(grid, patch.indices);
-      refreshUndoFlags();
-    }
-    requestRedraw();
-  } else {
-    adoptGrid(serverGrid);
-  }
+  applyServerGrid(parseAscii2d(server.ascii2d));
+  chrome.levelName = server.name;
   chrome.conflict = null;
   sync.resolveTakeTheirs(server.version);
 }
@@ -355,6 +379,11 @@ export function discardDraft(): void {
 
 export async function boot(): Promise<void> {
   await refreshLevelList();
+  if (listRefreshTimer === null) {
+    listRefreshTimer = setInterval(() => {
+      void refreshLevelList();
+    }, CONFIG.sync.levelListRefreshMs);
+  }
   const first =
     chrome.levels.find((l) => l.id === "classic")?.id ?? chrome.levels[0]?.id;
   if (first !== undefined) {

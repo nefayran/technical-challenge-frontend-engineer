@@ -183,6 +183,9 @@ onUnmounted(() => {
     <ConflictDialog v-if="chrome.conflict !== null" />
     <PlaytestOverlay v-if="chrome.playtesting" @close="chrome.playtesting = false" />
     <TourOverlay v-if="showTour" @close="closeTour()" />
+    <div v-if="chrome.toast !== ''" class="toast" role="status" aria-live="polite">
+      {{ chrome.toast }}
+    </div>
   </div>
 </template>
 
@@ -251,6 +254,19 @@ h1 {
   display: flex;
   flex: 1;
   min-height: 0;
+}
+
+.toast {
+  position: fixed;
+  bottom: var(--space-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--color-bg-surface);
+  border: var(--border-width) solid var(--color-accent);
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  z-index: var(--z-dialog);
 }
 
 main {
