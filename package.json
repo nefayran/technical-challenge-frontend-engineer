@@ -7,7 +7,8 @@
     "game": "bun --hot frontend/game/serve.ts",
     "editor": "bun --hot frontend/editor/serve.ts",
     "test": "bun test",
-    "e2e": "bun e2e/run.mjs"
+    "e2e": "bun e2e/run.mjs",
+    "perf": "bun e2e/perf.mjs"
   },
   "dependencies": {
     "vue": "^3.5.13"

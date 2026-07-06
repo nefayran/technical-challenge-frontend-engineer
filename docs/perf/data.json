@@ -1,0 +1,28 @@
+{
+  "note": "Frame times in ms, collected via requestAnimationFrame deltas in headless Chromium (1440x900).",
+  "budgetMs": 16.7,
+  "paint10": {
+    "frames": 88,
+    "avg": 8.334090909090907,
+    "p95": 8.5,
+    "worst": 9.399999999999977
+  },
+  "paint1000": {
+    "frames": 89,
+    "avg": 8.33483146067416,
+    "p95": 8.800000000000182,
+    "worst": 9.199999999999818
+  },
+  "zoom1000": {
+    "frames": 291,
+    "avg": 8.679381443298967,
+    "p95": 9,
+    "worst": 50
+  },
+  "playtest1000": {
+    "frames": 597,
+    "avg": 8.333333333333336,
+    "p95": 8.800000000000182,
+    "worst": 9.400000000000546
+  }
+}
