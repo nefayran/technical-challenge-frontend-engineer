@@ -2,6 +2,10 @@
 
 Run: `bun install && uv sync`, then `uv run backend` and `bun run editor` → http://localhost:3001. Tests: `bun test`; e2e: `bun run e2e` (once before: `bunx playwright install chromium`).
 
+## Clarifications
+
+Before starting I sent seven questions, each with the default I would proceed on (save model, crash recovery, backend changes, concurrency, perf scope, the lossy serializer, level lifecycle) — and started on those defaults without waiting. The answers confirmed five as-is; two shaped scope: concurrency ("show how you'd approach constant updates") turned into the implemented live pull plus the hosted-design section below, and level lifecycle into shipped rename plus a described delete design.
+
 ## Technical decisions
 
 **Cell model.** One byte per cell (`Uint8Array`, 12 codes). Engine's `BlockValue` objects would be 1M heap allocations at 1000×1000; flat bytes make the board 1MB and every tool O(touched cells). Own lossless ascii2d codec: the engine's `toAscii2d` writes walls only and would strip pellets and spawns on the first save. Codec is unit-tested cell-by-cell against the engine parser.
